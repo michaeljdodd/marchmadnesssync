@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>March Madness Sync</title>
+    <script>
+        window.onload = function() {
+            // Open March Madness Live in a new tab
+            let streamUrl = "https://www.ncaa.com/march-madness-live";
+            let newTab = window.open(streamUrl, "_blank");
+            
+            // Inject sync script after a short delay
+            setTimeout(() => {
+                newTab.eval(`(() => {
+                    const syncServer = "https://your-sync-server.com";
+                    const syncInterval = 3000;
+                    let userId = Math.random().toString(36).substring(7);
+                    
+                    function getVideoElement() {
+                        return document.querySelector("video");
+                    }
+                    
+                    function sendSyncData() {
+                        const video = getVideoElement();
+                        if (!video) return;
+                        
+                        fetch(syncServer + "/sync", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId, timestamp: video.currentTime })
+                        });
+                    }
+                    
+                    function receiveSyncData() {
+                        fetch(syncServer + "/sync-data")
+                            .then(response => response.json())
+                            .then(data => {
+                                const video = getVideoElement();
+                                if (!video) return;
+                                
+                                const leader = data.leaderTimestamp;
+                                const diff = Math.abs(video.currentTime - leader);
+                                
+                                if (diff > 0.5) {
+                                    video.currentTime = leader;
+                                } else if (diff > 0.1) {
+                                    video.playbackRate = diff > 0 ? 1.1 : 0.9;
+                                } else {
+                                    video.playbackRate = 1.0;
+                                }
+                            });
+                    }
+                    
+                    setInterval(() => {
+                        sendSyncData();
+                        receiveSyncData();
+                    }, syncInterval);
+                    
+                    console.log("March Madness Sync Script Running!");
+                })();`);
+            }, 3000);
+        };
+    </script>
+</head>
+<body>
+    <h1>March Madness Sync Loading...</h1>
+    <p>Your stream will open in a new tab and sync automatically.</p>
+</body>
+</html>
